@@ -7,6 +7,4 @@
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (debug-repl)
-  (println "Hello, World!")
   (println (out_clusterize)))

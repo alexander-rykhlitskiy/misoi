@@ -2,7 +2,7 @@
   (:gen-class))
 (use 'alex-and-georges.debug-repl)
 
-(defstruct Point :x :y :potential)
+(defstruct Point :coordinates :potential)
 (def Ra 3)
 (def Rb (* Ra 1.5))
 (def alpha (/ 4 (Math/pow Ra 2)))
@@ -15,7 +15,7 @@
   (memoize (fn []
     (vec (for
       [point [[0 3] [1 5] [2 4] [3 3] [2 2] [2 1] [1 0] [5 5] [6 5] [7 6] [5 3] [7 3] [6 2] [6 1] [8 1]]]
-      (struct Point (get point 0) (get point 1)))
+      (struct Point point))
     )
   ))
 )
@@ -23,15 +23,20 @@
 
 (defn square_distance
   "Square of euclidean distance."
-  [point_1 point_2]
-  (defn square_diff [axis] (Math/pow (- (get point_2 axis) (get point_1 axis)) 2))
-  (+ (square_diff :x) (square_diff :y))
+  [point_1 point_2 axis_number]
+  (defn square_diff [axis_number]
+    (Math/pow (- (get (get point_2 :coordinates) axis_number) (get (get point_1 :coordinates) axis_number)) 2))
+  (if
+    (< axis_number (count (get point_1 :coordinates)))
+    (+ (square_diff axis_number) (square_distance point_1 point_2 (inc axis_number)))
+    0
+  )
 )
 
 (defn point_to_point_potential
   "Get potential of point relatively to one point."
   [point_1, point_2, coefficient]
-  (Math/pow Math/E (- (* coefficient (square_distance point_1 point_2))))
+  (Math/pow Math/E (- (* coefficient (square_distance point_1 point_2 0))))
 )
 
 (defn point_to_multiple_points_potential
@@ -56,8 +61,7 @@
 ;to add another points, we need only to add parameters here in function points
     (for [base_point (points)]
       (struct Point
-        (get base_point :x)
-        (get base_point :y)
+        (get base_point :coordinates)
         (point_to_multiple_points_potential (points) base_point)
       )
     )
@@ -81,8 +85,7 @@
     (sort-by :potential >
       (for [point (rest_points)]
         (struct Point
-          (get point :x)
-          (get point :y)
+          (get point :coordinates)
           (- (get point :potential)
              (* (get (max_potential_point) :potential)
                 (point_to_point_potential (max_potential_point) point beta)
@@ -105,7 +108,7 @@
         (if
           (< (get point :potential) (* e_bottom (max_potential)))
           cluster_centers
-          (let [d_min (apply min (for [center cluster_centers] (square_distance point center)))]
+          (let [d_min (apply min (for [center cluster_centers] (square_distance point center 0)))]
             (if
               (>= (+ (/ d_min Ra) (/ (get point :potential) (max_potential))))
               (clusterize revised_potentials (conj cluster_centers point) (inc el_index))
