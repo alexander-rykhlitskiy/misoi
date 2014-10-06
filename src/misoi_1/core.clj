@@ -8,5 +8,8 @@
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (println (out_clusterize "resources/бабочка.txt"))
+  (let [cluster_centers (out_clusterize (first args))]
+    (println (count cluster_centers))
+    (println cluster_centers)
+  )
 )

@@ -12,14 +12,15 @@
 (def e_top 0.5)
 (def e_bottom 0.15)
 
-(def points
+(def import_points
   (memoize (fn [file_path]
     (for
       [point
         (for [str_point (str/split (slurp file_path) #"\n")]
           (vec (for [axis (str/split str_point #",")]
-            (Integer. (read-string axis)))
-          ))
+            (read-string axis))
+          )
+        )
       ]
       (struct Point point))
   ))
@@ -72,18 +73,6 @@
   ))
 )
 
-(def max_potential_point (memoize (fn [points]
-  (first (first (part_by_max_potential points)))
-)))
-
-(def max_potential (memoize (fn [points]
-  (get (max_potential_point points) :potential)
-)))
-
-(def rest_points (memoize (fn [points]
-    (second (part_by_max_potential points))
-)))
-
 (def revised_potentials
   (memoize (fn
     [max_potential_point, rest_points]
@@ -103,42 +92,42 @@
 )
 
 (defn clusterize
-  [max_potential, revised_potentials, cluster_centers, el_index]
-  (if
-    (< el_index (count revised_potentials))
-    (let [point (get (vec revised_potentials) el_index)]
+  [points cluster_centers first_max_point]
+  (let [parted_points (part_by_max_potential points)]
+    (let [max_point (first (first parted_points)) rest_points (second parted_points)]
       (if
-        (> (get point :potential) (* e_top max_potential))
-        (clusterize max_potential revised_potentials (conj cluster_centers point) (inc el_index))
+        (> (count points) 0)
         (if
-          (< (get point :potential) (* e_bottom max_potential))
-          cluster_centers
-          (let [d_min (apply min (for [center cluster_centers] (square_distance point center 0)))]
-            (if
-              (>= (+ (/ d_min Ra) (/ (get point :potential) max_potential)))
-              (clusterize max_potential revised_potentials (conj cluster_centers point) (inc el_index))
-              (clusterize max_potential revised_potentials cluster_centers (inc el_index))
+          (> (get max_point :potential) (* e_top (get first_max_point :potential)))
+          (clusterize
+            (revised_potentials max_point rest_points)
+            (conj cluster_centers max_point)
+            first_max_point)
+          (if
+            (< (get max_point :potential) (* e_bottom (get first_max_point :potential)))
+            cluster_centers
+            (let [d_min (apply min (for [center cluster_centers] (Math/sqrt (square_distance max_point center 0))))]
+              (if
+                (>= (+ (/ d_min Ra) (/ (get max_point :potential) (get first_max_point :potential))))
+                (clusterize (revised_potentials max_point rest_points) (conj cluster_centers max_point) first_max_point)
+                (clusterize (revised_potentials max_point rest_points) cluster_centers first_max_point)
+              )
             )
           )
         )
+        cluster_centers
       )
     )
-    cluster_centers
   )
 )
 
 (defn out_clusterize
   [file_path]
-  (let [points_with_potentials (points_with_potentials (points file_path))]
-    (clusterize
-      (max_potential points_with_potentials)
-      (revised_potentials
-        (max_potential_point
-          points_with_potentials)
-        (rest_points points_with_potentials))
-      [(max_potential_point
-          points_with_potentials)]
-      0
+  (let [points (points_with_potentials (import_points file_path))]
+    (let [parted_points (part_by_max_potential points)]
+      (let [max_point (first (first parted_points)) rest_points (second parted_points)]
+        (conj (clusterize rest_points () max_point) max_point)
+      )
     )
   )
 )
