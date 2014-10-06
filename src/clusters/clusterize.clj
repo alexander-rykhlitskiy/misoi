@@ -13,10 +13,10 @@
 (def e_bottom 0.15)
 
 (def points
-  (memoize (fn []
+  (memoize (fn [file_path]
     (for
       [point
-        (for [str_point (str/split (slurp "resources/бабочка.txt") #"\n")]
+        (for [str_point (str/split (slurp file_path) #"\n")]
           (vec (for [axis (str/split str_point #",")]
             (Integer. (read-string axis)))
           ))
@@ -52,7 +52,7 @@
     )
   )
 )
-(def split_by_max_potential
+(def part_by_max_potential
   (memoize (fn [points]
     "Split set of points to ((biggest_potential_point)(rest points))."
     (let [max_potential (apply max (map #(get % :potential) points))]
@@ -61,19 +61,19 @@
   ))
 )
 (def points_with_potentials
-  (memoize (fn []
+  (memoize (fn [points]
 ;to add another points, we need only to add parameters here in function points
-    (for [base_point (points)]
+    (for [base_point points]
       (struct Point
         (get base_point :coordinates)
-        (point_to_multiple_points_potential (points) base_point)
+        (point_to_multiple_points_potential points base_point)
       )
     )
   ))
 )
 
 (def max_potential_point (memoize (fn [points]
-  (first (first (split_by_max_potential points)))
+  (first (first (part_by_max_potential points)))
 )))
 
 (def max_potential (memoize (fn [points]
@@ -81,7 +81,7 @@
 )))
 
 (def rest_points (memoize (fn [points]
-    (second (split_by_max_potential points))
+    (second (part_by_max_potential points))
 )))
 
 (def revised_potentials
@@ -128,15 +128,17 @@
 )
 
 (defn out_clusterize
-  []
-  (clusterize
-    (max_potential (points_with_potentials))
-    (revised_potentials
-      (max_potential_point
-        (points_with_potentials))
-      (rest_points (points_with_potentials)))
-    [(max_potential_point
-        (points_with_potentials))]
-    0
+  [file_path]
+  (let [points_with_potentials (points_with_potentials (points file_path))]
+    (clusterize
+      (max_potential points_with_potentials)
+      (revised_potentials
+        (max_potential_point
+          points_with_potentials)
+        (rest_points points_with_potentials))
+      [(max_potential_point
+          points_with_potentials)]
+      0
+    )
   )
 )

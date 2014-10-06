@@ -8,5 +8,5 @@
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (println (out_clusterize))
+  (println (out_clusterize "resources/бабочка.txt"))
 )
