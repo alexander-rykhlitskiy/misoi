@@ -1,6 +1,7 @@
 (ns clusters.clusterize
   (:gen-class))
 (use 'alex-and-georges.debug-repl)
+(require '[clojure.string :as str])
 
 (defstruct Point :coordinates :potential)
 (def Ra 3)
@@ -13,13 +14,16 @@
 
 (def points
   (memoize (fn []
-    (vec (for
-      [point [[0 3] [1 5] [2 4] [3 3] [2 2] [2 1] [1 0] [5 5] [6 5] [7 6] [5 3] [7 3] [6 2] [6 1] [8 1]]]
+    (for
+      [point
+        (for [str_point (str/split (slurp "resources/бабочка.txt") #"\n")]
+          (vec (for [axis (str/split str_point #",")]
+            (Integer. (read-string axis)))
+          ))
+      ]
       (struct Point point))
-    )
   ))
 )
-
 
 (defn square_distance
   "Square of euclidean distance."
@@ -124,5 +128,4 @@
 
 (defn out_clusterize
   []
-  (println (sort-by :potential > (revised_potentials)))
   (clusterize (revised_potentials) [(max_potential_point)] 0))
