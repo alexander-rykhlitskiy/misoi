@@ -99,7 +99,7 @@
         (> (count points) 0)
         (if
           (> (get max_point :potential) (* e_top (get first_max_point :potential)))
-          (clusterize
+          (recur
             (revised_potentials max_point rest_points)
             (conj cluster_centers max_point)
             first_max_point)
@@ -109,8 +109,8 @@
             (let [d_min (apply min (for [center cluster_centers] (Math/sqrt (square_distance max_point center 0))))]
               (if
                 (>= (+ (/ d_min Ra) (/ (get max_point :potential) (get first_max_point :potential))))
-                (clusterize (revised_potentials max_point rest_points) (conj cluster_centers max_point) first_max_point)
-                (clusterize (revised_potentials max_point rest_points) cluster_centers first_max_point)
+                (recur (revised_potentials max_point rest_points) (conj cluster_centers max_point) first_max_point)
+                (recur (revised_potentials max_point rest_points) cluster_centers first_max_point)
               )
             )
           )
